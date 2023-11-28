@@ -1,4 +1,4 @@
 # LabsMAD
 
-3 лаба на датасете "Титаник"
-4 лаба на датасете "<a href="https://github.com/TheyCallMeZong/LabsMAD/tree/main">Fifa</a>" 
+3 лаба на датасете "<a href="https://www.kaggle.com/competitions/spaceship-titanic/data">Титаник</a>"
+4 лаба на датасете "<a href="https://www.kaggle.com/datasets/mathan/fifa-2018-match-statistics/data">Fifa</a>" 
