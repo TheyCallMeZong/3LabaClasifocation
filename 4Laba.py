@@ -55,7 +55,7 @@ factor_loadings = pipeline.named_steps['factoranalysis'].components_
 loadings_df_1 = pd.DataFrame(factor_loadings.T, index=df.columns, columns=[f'Factor {i+1}' for i in range(4)])
 plt.figure(figsize=(10, 6))
 sns.heatmap(loadings_df_1, annot=True, cmap='coolwarm', fmt='.2f', linewidths=.5)
-plt.title('Factor Loadings')
+plt.title('factor loadings after rotation')
 plt.show()
 # Получаем собственные значения (важный показатель в определении факторов)
 # собственные значения указывают на количество важных факторов, способных объяснить дисперсию в данных
