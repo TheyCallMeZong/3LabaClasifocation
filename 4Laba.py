@@ -1,71 +1,75 @@
-import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA, FactorAnalysis
+from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from scipy.stats import shapiro
-from sklearn.decomposition import PCA
-from statsmodels.multivariate.factor import Factor
 
-# данные по вину (не опять а снова). Данные являются результатом химического анализа вин 3 различных сортов
-# происходящих из одного региона.
-# предварительно разделили на 3 фактора
-# Химический состав:
+use_columns = ["Goal Scored", "Ball Possession %", "Attempts", "Corners",
+                        "Free Kicks", "Saves", "Pass Accuracy %",
+                       "Passes", "Fouls Committed", "Yellow Card", "Yellow & Red", "Red"]
 
-#Alcohol (Алкоголь)
-#Malic_acid (Яблочная кислота)
-#Ash (Зола)
-#Magnesium (Магний)
-#Total_phenols (Общие фенолы)
-#Flavanoids (Флавоноиды)
-#Nonflavanoid_phenols (Нефлаваноидные фенолы)
-#Proanthocyanins (Проантоцианы)
-#Цвет и вкус:
-
-#Color_intensity (Интенсивность цвета)
-#Hue (Оттенок)
-#OD280/OD315_of_diluted_wines (Оптическая плотность разбавленного вина)
-#Производственные и химические параметры:
-#Proline (Пролин)
-
-# Class - target
-url = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data"
-# признаки
-columns = ["Class", "Alcohol", "Malic_acid", "Ash", "Magnesium", "Total_phenols", "Flavanoids",
-           "Nonflavanoid_phenols", "Proanthocyanins", "Color_intensity", "Hue", "OD280/OD315_of_diluted_wines", "Proline"]
-wine_data = pd.read_csv(url, names=columns)
-x_wine_data = wine_data.drop('Class', axis=1)
-y_wine_data = wine_data['Class'].values
-
-
-# стандартизация данный
+fifa = pd.read_csv("/Users/semensavcenko/Downloads/FIFA 2018 Statistics.csv",
+                            usecols=use_columns)
+df = fifa.copy()
 scaler = StandardScaler()
-x_wine_data_standardized = scaler.fit_transform(x_wine_data)
-x_wine_data_df = pd.DataFrame(x_wine_data_standardized, columns=x_wine_data.columns)
 
-# проверка на нормальность
-normality_tests = {}
-for column in x_wine_data_df.columns:
-    stat, p_value = shapiro(x_wine_data_df[column])
-    normality_tests[column] = p_value
+# Применение стандартизации к данным
+standardized_data = scaler.fit_transform(df)
+df = pd.DataFrame(standardized_data, columns=df.columns)
 
-# Вывод уровней значимости
-alpha = 0.05
-print("Тест на нормальность распределения:")
-for column, p_value in normality_tests.items():
-    if p_value > alpha:
-        print(f"{column}: не подходит на нормальное распределние")
-    else:
-        print(f"{column}: подходит на нормальное распределние")
-# Корреляция
-# ура все подходит под нормальное распределение по тесту шапиро уилка (или как там его)
-# значит делаем корреляцию пирсона
-correl = x_wine_data_df.corr()
-pd.set_option('display.max_columns', None)
+# make correlation matrix
+correlation_matrix = df.corr()
 pd.set_option('display.max_rows', None)
-#print(correl)
-#print(cov_matrix)
+pd.set_option('display.max_columns', None)
+# print(correlation_matrix)
 
-# PCA
-pca = PCA(n_components=3)
-principalComponents = pca.fit(x_wine_data_df)
-print(pca.components_)
+# по матрице корреляций походу 4 фактора
+
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
+plt.title('Матрица корреляции')
+plt.show()
+
+# let's determine the factors
+# n_componets - желаемое количесвто факторов, насчитали 4 поэтому будет 4
+pca = PCA(n_components=4)
+
+# Производим PCA
+pca.fit(df)
+
+# Получаем факторные нагрузки
+loadings = pca.components_.T
+# Выводим факторные нагрузки в таблицу
+loadings_df = pd.DataFrame(loadings, index=df.columns, columns=[f'Factor {i+1}' for i in range(pca.n_components)])
+plt.figure(figsize=(10, 6))
+sns.heatmap(loadings_df, annot=True, cmap='coolwarm', fmt='.2f', linewidths=.5)
+plt.title('Factor Loadings')
+plt.show()
+
+# вращение
+pipeline = make_pipeline(StandardScaler(), FactorAnalysis(n_components=4, rotation="varimax"))
+X_rotated = pipeline.fit_transform(df)
+
+factor_loadings = pipeline.named_steps['factoranalysis'].components_
+
+loadings_df_1 = pd.DataFrame(factor_loadings.T, index=df.columns, columns=[f'Factor {i+1}' for i in range(4)])
+plt.figure(figsize=(10, 6))
+sns.heatmap(loadings_df_1, annot=True, cmap='coolwarm', fmt='.2f', linewidths=.5)
+plt.title('Factor Loadings')
+plt.show()
+# Получаем собственные значения (важный показатель в определении факторов)
+# собственные значения указывают на количество важных факторов, способных объяснить дисперсию в данных
+eigenvalues = pca.explained_variance_
+# Определяем количество компонент с собственными значениями больше 1
+num_components = sum(eigenvalues > 1)
+
+print("Количество компонент по критерию Кайзера:", num_components) #4
+# каменистая осыпь
+plt.plot(range(1, len(eigenvalues) + 1), eigenvalues, marker='o')
+plt.title('Scree Plot')
+plt.xlabel('Количество компонент')
+plt.ylabel('Собственные значения')
+plt.show()
+
+# в выоде можно бахнуть что то по типу мы определили 4 фактора и оказлось 4 по критерию Кайзера и каменистой осыпи
+# и вставить таблицу с 3 нагрузочными факторами и 4, емае
