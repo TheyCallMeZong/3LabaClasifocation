@@ -6,7 +6,6 @@ from scipy.stats import shapiro
 from sklearn.decomposition import PCA
 from statsmodels.multivariate.factor import Factor
 
-
 # данные по вину (не опять а снова). Данные являются результатом химического анализа вин 3 различных сортов
 # происходящих из одного региона.
 # предварительно разделили на 3 фактора
@@ -68,9 +67,5 @@ pd.set_option('display.max_rows', None)
 
 # PCA
 pca = PCA(n_components=3)
-principalComponents = pca.fit_transform(x_wine_data_df)
-principalDf = pd.DataFrame(data=principalComponents,
-                           columns=['principal component 1', 'principal component 2', 'principal component 3'])
-print(principalDf)
-
-
+principalComponents = pca.fit(x_wine_data_df)
+print(pca.components_)
